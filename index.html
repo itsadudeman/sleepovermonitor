@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sleepover VC Monitoring - System Active</title>
     <style>
-        /* [CSS PREVIOUSLY DEFINED REMAINS THE SAME] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
@@ -20,205 +19,305 @@
             position: relative;
         }
 
+        /* RESTORED DEBUGGER */
         #debugger {
-            position: fixed; top: 0; left: 0; z-index: 99999; 
-            background: rgba(0, 30, 0, 0.95); border: 2px solid #00ff00;
-            color: #00ff00; padding: 12px; font-size: 0.75rem; width: 320px;
-            pointer-events: auto; transition: transform 0.3s, opacity 0.3s;
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            z-index: 99999; 
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 8px;
+            font-size: 0.7rem;
+            width: 160px;
         }
-        #debugger.hidden { transform: translateX(-110%); opacity: 0; }
 
+        .crash-btn {
+            margin-top: 5px;
+            background: #eee;
+            color: #000;
+            border: none;
+            padding: 2px;
+            cursor: pointer;
+            font-size: 0.65rem;
+            width: 100%;
+        }
+
+        #reboot-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: #00ff00;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 100000;
+        }
+
+        /* TICKER */
         .ticker-wrap {
-            background-color: #ff0000; color: #000; width: 100%;
-            overflow: hidden; white-space: nowrap; padding: 12px 0;
-            font-weight: 900; font-size: 1.8rem; border-bottom: 3px solid #330000;
+            background-color: #ff0000;
+            color: #000;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 10px 0;
+            font-weight: 900;
+            font-size: 1.8rem;
             flex-shrink: 0;
         }
 
-        .ticker { display: inline-block; padding-left: 100%; animation: marquee 25s linear infinite; }
-        .ticker.paused { animation-play-state: paused; }
-        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
-
-        .container { display: flex; flex: 1; padding: 40px; gap: 40px; align-items: stretch; overflow: hidden; min-height: 0; }
-        .timer-section { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
-        .big-numbers { font-size: clamp(3rem, 8vw, 8rem); font-weight: 900; line-height: 0.9; margin-bottom: 20px;}
-        
-        .console-box {
-            flex: 1.2; background-color: #08162f; display: flex; flex-direction: column;
-            border: 1px solid #1a2a44; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-            min-width: 0; min-height: 0;
+        .ticker {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 25s linear infinite;
         }
 
-        .console-header { color: #3d8bff; padding: 15px; font-size: 1.8rem; border-bottom: 2px solid #060f21; flex-shrink: 0; }
-        #console-content { flex: 1; overflow-y: auto; padding: 15px; color: #3d8bff; font-size: 1.2rem; line-height: 1.4; word-wrap: break-word; }
-        .console-input-area { display: flex; background: rgba(0, 0, 0, 0.3); padding: 15px; border-top: 1px solid #1a2a44; align-items: center; flex-shrink: 0; }
-        #user-input { background: transparent; border: none; color: #fff; font-family: 'Consolas', monospace; font-size: 1.2rem; flex: 1; outline: none; }
-        .credits { padding: 15px 40px; font-size: 0.9rem; color: #ff3131; flex-shrink: 0; }
+        .ticker.paused { animation-play-state: paused !important; }
+
+        @keyframes marquee {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100%, 0); }
+        }
+
+        /* MAIN LAYOUT */
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 60px;
+            gap: 40px;
+            min-height: 0;
+        }
+
+        .timer-section { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+        }
+
+        .big-numbers { font-size: clamp(4rem, 10vw, 9rem); font-weight: 900; line-height: 0.8; margin-bottom: 20px;}
+        .total-display { font-size: 1.5rem; margin-top: 10px; font-weight: bold; text-transform: uppercase; }
+
+        .console-box {
+            flex: 1.2;
+            background-color: #050d1a;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #142238;
+            min-height: 0;
+        }
+
+        .console-header {
+            color: #3d8bff;
+            padding: 15px;
+            font-size: 1.5rem;
+            border-bottom: 1px solid #142238;
+        }
+
+        #console-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            color: #3d8bff;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #142238;
+            background: rgba(0,0,0,0.2);
+        }
+
+        #user-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1.1rem;
+            flex: 1;
+            outline: none;
+            margin-left: 10px;
+        }
+
+        .footer-credits {
+            padding: 10px 60px;
+            font-size: 0.8rem;
+            color: #ff3131;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
 
-    <div id="debugger">
-        <div class="debug-header"><span>[SYSTEM DEBUGGER]</span></div>
-        STATUS: <span id="debug-status">WAITING</span><br>
-        WATCHDUDE: <span id="watchdude-status">ACTIVE</span>
-        <button class="crash-btn" style="margin-top:10px; width:100%;" onclick="triggerManualCrash()">[SIMULATE CRASH]</button>
-    </div>
+<div id="reboot-overlay">
+    <h1>SYSTEM CRITICAL ERROR</h1>
+    <p>Memory Dump: 0x00004FC</p>
+    <button class="crash-btn" style="width: 200px; margin-top: 20px;" onclick="rebootSystem()">[SYSTEM REBOOT]</button>
+</div>
 
-    <div class="ticker-wrap">
-        <div id="main-ticker" class="ticker">
-            WELCOME TO THE SLEEPOVER VC MONITORING WEBSITE :-) // THE CURRENT TIME IS <span id="ticker-clock">...</span> // SYSTEM STATUS: OPTIMAL //
+<div id="debugger">
+    [SYSTEM DEBUGGER]<br>
+    STATUS: <span id="db-status">WAITING</span><br>
+    WATCHDUDE: ACTIVE<br>
+    <button class="crash-btn" onclick="triggerCrash()">[SIMULATE CRASH]</button>
+</div>
+
+<div class="ticker-wrap">
+    <div id="main-ticker" class="ticker">
+        WELCOME TO THE SLEEPOVER VC MONITORING WEBSITE :-) // THE CURRENT TIME IS <span id="ticker-clock">...</span> // SYSTEM STATUS: OPTIMAL //
+    </div>
+</div>
+
+<div class="container">
+    <div class="timer-section">
+        <div class="big-numbers">
+            <span id="display-days">--</span> days<br>
+            <span id="display-hours">--</span> hours
+        </div>
+        <div class="total-display" id="display-total-line">
+            TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
+        </div>
+        <div style="margin-top: 20px; opacity: 0.5; font-size: 0.9rem;">
+            Started: March 15, 2026 @ 12:22PM (GMT+8)
         </div>
     </div>
 
-    <div class="container">
-        <div class="timer-section">
-            <div class="big-numbers">
-                <span id="display-days">--</span> days<br>
-                <span id="display-hours">--</span> hours
-            </div>
-            <div style="font-size: 1rem; opacity: 0.6;">Started: March 15, 2026 @ 12:22PM (GMT+8)</div>
-        </div>
-
-        <div class="console-box">
-            <div class="console-header">Birds Console</div>
-            <div id="console-content"></div>
-            <div class="console-input-area">
-                <span style="color:#3d8bff; margin-right:10px; font-weight:bold;">>></span>
-                <input type="text" id="user-input" placeholder="Type //help for commands..." autocomplete="off">
-            </div>
+    <div class="console-box">
+        <div class="console-header">Birds Console</div>
+        <div id="console-content"></div>
+        <div class="input-area">
+            <span style="color: #3d8bff; font-weight: bold;">>></span>
+            <input type="text" id="user-input" placeholder="Type //help for commands..." autocomplete="off">
         </div>
     </div>
+</div>
 
-    <div class="credits">MADE BY .what_0 AND Gemini 3.0 Fast</div>
+<div class="footer-credits">
+    MADE BY .what_0 AND Gemini 3.0 Fast
+</div>
 
 <script>
     const START_TIME = Date.UTC(2026, 2, 15, 4, 22, 0); 
     const MAX_LOGS = 100;
-    let loreState = "IDLE"; // IDLE, AWAITING_CONFIRM, AWAITING_LOGIN, LOCKED
-    
+    let loreState = "IDLE"; 
+    let currentTimezoneOffset = 8;
+
     function logToConsole(message, type = "LOG") {
-        const consoleContent = document.getElementById("console-content");
-        while (consoleContent.children.length >= MAX_LOGS) consoleContent.removeChild(consoleContent.firstChild);
+        const content = document.getElementById("console-content");
+        while (content.children.length >= MAX_LOGS) content.removeChild(content.firstChild);
         
         const entry = document.createElement("div");
-        entry.style.marginBottom = "8px";
+        entry.style.marginBottom = "5px";
         
         if (type === "USER") {
-            entry.style.color = "#ffffff";
-            entry.innerText = `>> [USER]: ${message}`;
+            entry.innerHTML = `<span style="color:white">>> [USER]: ${message}</span>`;
         } else if (type === "ERR") {
-            entry.style.color = "#ff3131";
-            entry.innerText = `>> [ERR]: ${message}`;
+            entry.innerHTML = `<span style="color:#ff3131">>> [ERR]: ${message}</span>`;
         } else if (type === "NIGHT") {
-            entry.style.color = "#888888"; // Grey font
-            entry.innerText = `>> [NIGHT]: ${message}`;
-        } else if (type === "NONE") {
-            entry.innerText = message;
+            entry.innerHTML = `<span style="color:#888">>> [NIGHT]: ${message}</span>`;
+        } else if (type === "CMD") {
+            entry.innerHTML = `<span style="color:#3d8bff">${message}</span>`;
         } else {
             entry.innerText = `>> [LOG]: ${message}`;
         }
         
-        consoleContent.appendChild(entry);
-        consoleContent.scrollTop = consoleContent.scrollHeight;
+        content.appendChild(entry);
+        content.scrollTop = content.scrollHeight;
     }
 
+    // COMMAND LOGIC
     const userInput = document.getElementById('user-input');
-
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            const rawText = userInput.value.trim();
-            if (rawText === "") return;
-            const cmd = rawText.toLowerCase();
+            const raw = userInput.value.trim();
+            if (!raw) return;
+            const cmd = raw.toLowerCase();
 
-            // 1. Handle Lore Sequence First
+            // Lore State Machine
             if (loreState === "AWAITING_CONFIRM") {
-                logToConsole(rawText, "USER");
-                if (cmd === "y") {
+                logToConsole(raw, "USER");
+                if (cmd === 'y') {
                     loreState = "AWAITING_LOGIN";
                     logToConsole("Hello! Welcome to the Remote Night(c) Management Interface!", "NIGHT");
-                    logToConsole("Please enter your username and password that you received in your orientation. (Enter your credentials with >> [USER]: [username], [password].)", "NIGHT");
-                } else if (cmd === "n") {
+                    logToConsole("Please enter your username and password... (>> [USER]: [user], [pass])", "NIGHT");
+                } else {
                     loreState = "LOCKED";
                     logToConsole("Thank you for not proceeding.");
                 }
-                userInput.value = "";
-                return;
+                userInput.value = ""; return;
             }
 
             if (loreState === "AWAITING_LOGIN") {
-                logToConsole(rawText, "USER");
-                // Expecting: skyboxhihi, night32
-                const cleanInput = rawText.replace('>> [USER]:', '').trim();
-                const parts = cleanInput.split(',').map(p => p.trim());
-                
-                if (parts[0] !== "skyboxhihi") {
-                    logToConsole("Wrong username. Please contact Night(c) Management for further support. Thank you for your time.", "ERR");
-                    loreState = "LOCKED";
-                } else if (parts[1] !== "night32") {
-                    logToConsole("Wrong password. Please contact Night(c) Management for further support. Thank you for your time.", "ERR");
-                    loreState = "LOCKED";
-                } else {
+                logToConsole(raw, "USER");
+                if (raw.includes("skyboxhihi") && raw.includes("night32")) {
                     logToConsole("Please forward this message to .what_0. Thank you for your time.", "NIGHT");
-                    loreState = "LOCKED";
+                } else {
+                    logToConsole("Wrong credentials. Access denied.", "ERR");
                 }
-                userInput.value = "";
-                return;
+                loreState = "LOCKED";
+                userInput.value = ""; return;
             }
 
-            // 2. Handle Standard Commands
-            logToConsole(rawText, "USER");
-            if (cmd === "//lorepiece") {
-                if (loreState === "LOCKED") {
-                    logToConsole("Command locked. Access denied.", "ERR");
-                } else {
-                    loreState = "AWAITING_CONFIRM";
-                    logToConsole("You are exiting Birds Console and The Sleepover boundaries. Are you sure? (Designate your answer with Y or N.)");
-                }
-            } 
-            else if (cmd === "//help") {
-                logToConsole("Available: //clear, //bird, //fact, //yesorno, //totaltime, //startticker, //stopticker, //lorepiece", "NONE");
-            }
-            else if (cmd === "//clear") document.getElementById("console-content").innerHTML = "";
-            else if (cmd === "//fact") handleFacts();
-            else if (cmd === "//yesorno") logToConsole(Math.random() > 0.5 ? "Mhm.. Yeah." : "Nah, nuh-uh.");
-            else if (cmd === "//totaltime") {
+            // Normal Commands
+            logToConsole(raw, "USER");
+            if (cmd === "//help") {
+                logToConsole("Available: //clear, //bird, //fact, //yesorno, //totaltime, //startticker, //stopticker, //lorepiece", "CMD");
+            } else if (cmd === "//stopticker") {
+                document.getElementById('main-ticker').classList.add('paused');
+                logToConsole("Ticker animation paused.");
+            } else if (cmd === "//startticker") {
+                document.getElementById('main-ticker').classList.remove('paused');
+                logToConsole("Ticker animation resumed.");
+            } else if (cmd === "//clear") {
+                document.getElementById("console-content").innerHTML = "";
+            } else if (cmd === "//totaltime") {
                 const diff = Date.now() - START_TIME;
-                logToConsole(`Uptime: ${Math.floor(diff/86400000)}d ${Math.floor((diff/3600000)%24)}h ${Math.floor((diff/60000)%60)}m.`);
+                const h = Math.floor(diff/3600000);
+                logToConsole(`Total Uptime: ${Math.floor(h/24)} days, ${h%24} hours.`);
+            } else if (cmd === "//fact") {
+                handleFacts();
+            } else if (cmd === "//lorepiece") {
+                if (loreState === "LOCKED") logToConsole("Command locked.", "ERR");
+                else {
+                    loreState = "AWAITING_CONFIRM";
+                    logToConsole("You are exiting Birds Console boundaries. Are you sure? (Y/N)");
+                }
             }
-            
             userInput.value = "";
         }
     });
 
     async function handleFacts() {
         if (Math.random() < 0.05) { logToConsole("Maw. :3"); return; }
-        const pool = [
-            "Project run under GitHub Pages now.",
-            "ChatGPT helped but failed in the end.",
-            "I look left and right. No one here.",
-            "ETERNAL SILENCE FOREVER.",
-            "TERMINATE"
-        ];
-        let s = pool[Math.floor(Math.random() * pool.length)];
-        if(s === "TERMINATE") {
-            logToConsole("Self-terminating...");
-            for(let i=0; i<3; i++) { await new Promise(r => setTimeout(r, 500)); logToConsole("Failed to terminate.", "ERR"); }
-        } else { logToConsole(s); }
+        const facts = ["Project moved from about:blank to GitHub.", "GPT was useless.", "Eternal silence.", "I am alone."];
+        logToConsole(facts[Math.floor(Math.random()*facts.length)]);
     }
 
-    function mainUpdateLoop() {
+    // SYSTEM LOOP
+    function update() {
         const now = new Date();
         const tickerClock = document.getElementById("ticker-clock");
-        if (tickerClock) tickerClock.innerText = now.toLocaleTimeString();
-        
+        if (tickerClock) {
+            const targetTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (currentTimezoneOffset * 3600000));
+            tickerClock.innerText = targetTime.toLocaleTimeString();
+        }
+
         const diff = now.getTime() - START_TIME;
-        document.getElementById("display-days").innerText = Math.floor(diff / 86400000);
-        document.getElementById("display-hours").innerText = Math.floor((diff / 3600000) % 24);
-        
-        requestAnimationFrame(mainUpdateLoop);
+        const totalHours = Math.floor(diff / 3600000);
+        document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
+        document.getElementById("display-hours").innerText = totalHours % 24;
+        document.getElementById("display-total-hours").innerText = totalHours;
+
+        document.getElementById("db-status").innerText = "RUNNING";
+        requestAnimationFrame(update);
     }
-    mainUpdateLoop();
+
+    function triggerCrash() { document.getElementById('reboot-overlay').style.display = 'flex'; }
+    function rebootSystem() { document.getElementById('reboot-overlay').style.display = 'none'; }
+
+    update();
 </script>
 </body>
 </html>
