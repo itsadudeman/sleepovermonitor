@@ -128,6 +128,10 @@
             animation: marquee 25s linear infinite;
         }
 
+        .ticker.paused {
+            animation-play-state: paused;
+        }
+
         @keyframes marquee {
             0% { transform: translate(0, 0); }
             100% { transform: translate(-100%, 0); }
@@ -180,7 +184,6 @@
             line-height: 1.4;
         }
 
-        /* NEW: INPUT AREA STYLES */
         .console-input-area {
             display: flex;
             background: rgba(0, 0, 0, 0.3);
@@ -246,7 +249,7 @@
     </div>
 
     <div class="ticker-wrap">
-        <div class="ticker">
+        <div id="main-ticker" class="ticker">
             WELCOME TO THE SLEEPOVER VC MONITORING WEBSITE :-) // THE CURRENT TIME IS <span id="ticker-clock">...</span> // SYSTEM STATUS: OPTIMAL //
         </div>
     </div>
@@ -271,7 +274,7 @@
             <div id="console-content"></div>
             <div class="console-input-area">
                 <span class="console-prefix">>></span>
-                <input type="text" id="user-input" placeholder="Enter message..." autocomplete="off">
+                <input type="text" id="user-input" placeholder="Type //help for commands..." autocomplete="off">
             </div>
         </div>
     </div>
@@ -288,11 +291,22 @@
     const START_TIME = Date.UTC(2026, 2, 15, 4, 22, 0); 
     window.heartbeatCount = 0;
     window.isSystemCrashed = false;
+    window.debuggerTerminated = false;
     let lastLoggedMinute = -1;
+    let currentTimezoneOffset = 8; // Default GMT+8
     
     // Keybind logic
     let toggleKey = localStorage.getItem('debug_toggle_key') || 'd';
     let isListeningForKey = false;
+
+    const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); // Bird Chirp
+    const facts = [
+        "Birds don't have sweat glands.",
+        "The heart of a shrimp is located in its head.",
+        "A snail can sleep for three years.",
+        "The longest recorded flight of a chicken is 13 seconds.",
+        "Slugs have four noses."
+    ];
 
     /**
      * KEYBIND SYSTEM
@@ -316,14 +330,16 @@
     }
 
     function toggleDebugger() {
+        if (window.debuggerTerminated) {
+            showToast("ERROR: DEBUGGER CORE DELETED");
+            return;
+        }
         const debugPanel = document.getElementById('debugger');
         const isHidden = debugPanel.classList.toggle('hidden');
         showToast(isHidden ? "DEBUGGER HIDDEN" : "DEBUGGER SHOWN");
     }
 
-    // Global Key Listener
     window.addEventListener('keydown', (e) => {
-        // Handle remapping
         if (isListeningForKey) {
             e.preventDefault();
             toggleKey = e.key.toLowerCase();
@@ -334,30 +350,81 @@
             return;
         }
 
-        // Handle triggering (only if NOT typing in the console input)
         if (e.key.toLowerCase() === toggleKey && document.activeElement.id !== 'user-input') {
             toggleDebugger();
         }
     });
 
     /**
-     * CONSOLE INPUT LOGIC
+     * CONSOLE INPUT & COMMANDS
      */
     const userInput = document.getElementById('user-input');
+    const consoleContent = document.getElementById("console-content");
+
+    function logToConsole(message, isUser = false, isLog = false) {
+        const entry = document.createElement("div");
+        entry.style.marginBottom = "10px";
+        if (isUser) {
+            entry.style.color = "#ffffff";
+            entry.innerText = `>> [USER]: ${message}`;
+        } else if (isLog) {
+            entry.innerText = `>> [LOG]: ${message}`;
+        } else {
+            entry.innerText = message;
+        }
+        consoleContent.appendChild(entry);
+        consoleContent.scrollTop = consoleContent.scrollHeight;
+    }
+
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !window.isSystemCrashed) {
-            const text = userInput.value.trim();
-            if (text !== "") {
-                const consoleContent = document.getElementById("console-content");
-                const entry = document.createElement("div");
-                entry.style.marginBottom = "10px";
-                entry.style.color = "#ffffff"; // User text is white for contrast
-                entry.innerText = `>> [USER]: ${text}`;
-                
-                consoleContent.appendChild(entry);
-                consoleContent.scrollTop = consoleContent.scrollHeight;
-                userInput.value = "";
+            const rawText = userInput.value.trim();
+            if (rawText === "") return;
+
+            logToConsole(rawText, true);
+            const cmd = rawText.toLowerCase();
+
+            // Command Processing
+            if (cmd === "//clear") {
+                consoleContent.innerHTML = "";
+            } 
+            else if (cmd === "//bird") {
+                birdSfx.play();
+                logToConsole("Audio pulse emitted (Chirp).", false, true);
+            } 
+            else if (cmd === "//fact") {
+                const randomFact = facts[Math.floor(Math.random() * facts.length)];
+                logToConsole(randomFact, false, true);
             }
+            else if (cmd.startsWith("//modifytime")) {
+                const parts = rawText.split(' ');
+                if (parts.length > 1) {
+                    const tz = parts[1].toUpperCase().replace('UTC', '');
+                    const offset = parseFloat(tz);
+                    if (!isNaN(offset)) {
+                        currentTimezoneOffset = offset;
+                        logToConsole(`Temporal alignment shifted to UTC${offset >= 0 ? '+' : ''}${offset}.`, false, true);
+                    } else {
+                        logToConsole("ERR: Invalid offset format.", false, true);
+                    }
+                } else {
+                    logToConsole("ERR: Timezone required (e.g., //modifytime UTC+5).", false, true);
+                }
+            }
+            else if (cmd === "//stopticker") {
+                document.getElementById('main-ticker').classList.toggle('paused');
+                logToConsole("Ticker animation state toggled.", false, true);
+            }
+            else if (cmd === "//terminatedebugger") {
+                window.debuggerTerminated = true;
+                document.getElementById('debugger').classList.add('hidden');
+                logToConsole("FATAL: Debugger kernel terminated. Restart required to re-init.", false, true);
+            }
+            else if (cmd === "//help") {
+                logToConsole("Available: //clear, //bird, //fact, //modifytime [tz], //stopticker, //terminatedebugger");
+            }
+
+            userInput.value = "";
         }
     });
 
@@ -374,15 +441,15 @@
         try {
             let activeModules = 0;
 
-            // --- 1. CLOCK MODULE ---
+            // --- 1. CLOCK MODULE (Supports Dynamic Offset) ---
             const tickerClock = document.getElementById("ticker-clock");
             if (tickerClock) {
-                const gmt8Offset = 8 * 60 * 60 * 1000;
-                const gmt8Time = new Date(nowMs + (now.getTimezoneOffset() * 60000) + gmt8Offset);
-                let h = gmt8Time.getHours();
+                const offsetMs = currentTimezoneOffset * 60 * 60 * 1000;
+                const targetTime = new Date(nowMs + (now.getTimezoneOffset() * 60000) + offsetMs);
+                let h = targetTime.getHours();
                 const ampm = h >= 12 ? "PM" : "AM";
                 h = h % 12 || 12;
-                tickerClock.innerText = `${h}:${String(gmt8Time.getMinutes()).padStart(2, "0")}:${String(gmt8Time.getSeconds()).padStart(2, "0")} ${ampm}`;
+                tickerClock.innerText = `${h}:${String(targetTime.getMinutes()).padStart(2, "0")}:${String(targetTime.getSeconds()).padStart(2, "0")} ${ampm}`;
                 activeModules++;
             }
 
@@ -400,21 +467,16 @@
             }
 
             // --- 3. CONSOLE LOGGING MODULE ---
-            const consoleContent = document.getElementById("console-content");
-            if (consoleContent) {
-                const totalMinutes = Math.floor((nowMs - START_TIME) / 60000);
-                if (totalMinutes !== lastLoggedMinute) {
-                    const diff = nowMs - START_TIME;
-                    const h = Math.floor(diff / 3600000) % 24;
-                    const d = Math.floor(diff / 86400000);
-                    const entry = document.createElement("div");
-                    entry.style.marginBottom = "10px";
-                    entry.innerText = `>> [LOG]: System pulse detected. Timer advanced. Total time: ${d}d ${h}h ${totalMinutes % 60}m.`;
-                    consoleContent.appendChild(entry);
-                    consoleContent.scrollTop = consoleContent.scrollHeight;
-                    lastLoggedMinute = totalMinutes;
-                }
+            const totalMinutes = Math.floor((nowMs - START_TIME) / 60000);
+            if (totalMinutes !== lastLoggedMinute) {
+                const diff = nowMs - START_TIME;
+                const h = Math.floor(diff / 3600000) % 24;
+                const d = Math.floor(diff / 86400000);
+                logToConsole(`System pulse detected. Total time: ${d}d ${h}h ${totalMinutes % 60}m.`, false, true);
+                lastLoggedMinute = totalMinutes;
                 activeModules++;
+            } else {
+                activeModules++; // Console is still "active"
             }
 
             // --- DEBUGGER UPDATES ---
@@ -423,8 +485,8 @@
             document.getElementById("debug-modules").innerText = `${activeModules}/3 ACTIVE`;
             const msStr = String(now.getMilliseconds()).padStart(3, "0");
             document.getElementById("debug-ms").innerText = `${now.toLocaleTimeString()}.${msStr}`;
-            document.getElementById("debug-errors").innerText = "NONE";
-            document.getElementById("debug-errors").style.color = "#00ff00";
+            document.getElementById("debug-errors").innerText = window.debuggerTerminated ? "DELETED" : "NONE";
+            document.getElementById("debug-errors").style.color = window.debuggerTerminated ? "#ff00ff" : "#00ff00";
 
         } catch (err) {
             document.getElementById("debug-status").innerText = "MODULE ERROR";
@@ -435,9 +497,6 @@
         requestAnimationFrame(mainUpdateLoop);
     }
 
-    /**
-     * MANUAL CRASH TRIGGER
-     */
     function triggerManualCrash() {
         window.isSystemCrashed = true;
         document.getElementById('rebootBtn').style.display = 'block';
@@ -446,30 +505,22 @@
         userInput.placeholder = "SYSTEM OFFLINE...";
     }
 
-    /**
-     * SYSTEM REBOOT
-     */
     function systemReboot() {
         window.isSystemCrashed = false;
         document.getElementById('rebootBtn').style.display = 'none';
         document.getElementById('crashBtn').style.display = 'block';
         userInput.disabled = false;
-        userInput.placeholder = "Enter message...";
+        userInput.placeholder = "Type //help for commands...";
         mainUpdateLoop();
     }
 
-    /**
-     * INDEPENDENT WATCHDUDE
-     */
     function startWatchdude() {
         let lastKnownHeartbeat = -1;
         let failCount = 0;
-
         setInterval(() => {
             const debugBox = document.getElementById("debugger");
             const watchdogText = document.getElementById("watchdude-status");
             const statusText = document.getElementById("debug-status");
-
             if (window.heartbeatCount === lastKnownHeartbeat) {
                 failCount++;
                 if (failCount >= 3) {
@@ -483,7 +534,7 @@
             } else {
                 failCount = 0;
                 lastKnownHeartbeat = window.heartbeatCount;
-                if (!debugBox.classList.contains('hidden')) {
+                if (!debugBox.classList.contains('hidden') && !window.debuggerTerminated) {
                     debugBox.style.background = "rgba(0, 30, 0, 0.95)";
                     debugBox.style.border = "2px solid #00ff00";
                 }
