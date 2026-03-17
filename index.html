@@ -50,7 +50,6 @@
             align-items: center;
         }
 
-        /* SETTINGS SECTION */
         .debug-settings {
             margin-top: 10px;
             padding-top: 8px;
@@ -181,9 +180,34 @@
             line-height: 1.4;
         }
 
+        /* NEW: INPUT AREA STYLES */
+        .console-input-area {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-top: 1px solid #1a2a44;
+            align-items: center;
+        }
+
+        .console-prefix {
+            color: #3d8bff;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        #user-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Consolas', monospace;
+            font-size: 1.3rem;
+            flex: 1;
+            outline: none;
+        }
+
         .credits { padding: 20px 50px; font-size: 1rem; color: #ff3131; }
         
-        /* Toast notification for keybind */
         #toast {
             position: fixed;
             bottom: 20px;
@@ -202,7 +226,6 @@
 
     <div id="toast">DEBUGGER TOGGLED</div>
 
-    <!-- DEBUGGER -->
     <div id="debugger">
         <div class="debug-header">
             <span>[SYSTEM DEBUGGER]</span>
@@ -222,14 +245,12 @@
         <button id="rebootBtn" class="reboot-btn" onclick="systemReboot()">[SYSTEM REBOOT]</button>
     </div>
 
-    <!-- MARQUEE TICKER -->
     <div class="ticker-wrap">
         <div class="ticker">
             WELCOME TO THE SLEEPOVER VC MONITORING WEBSITE :-) // THE CURRENT TIME IS <span id="ticker-clock">...</span> // SYSTEM STATUS: OPTIMAL //
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
     <div class="container">
         <div class="timer-section">
             <div style="font-size: 1.5rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">Session Duration</div>
@@ -248,6 +269,10 @@
         <div class="console-box">
             <div class="console-header">Birds Console</div>
             <div id="console-content"></div>
+            <div class="console-input-area">
+                <span class="console-prefix">>></span>
+                <input type="text" id="user-input" placeholder="Enter message..." autocomplete="off">
+            </div>
         </div>
     </div>
 
@@ -309,9 +334,30 @@
             return;
         }
 
-        // Handle triggering
-        if (e.key.toLowerCase() === toggleKey) {
+        // Handle triggering (only if NOT typing in the console input)
+        if (e.key.toLowerCase() === toggleKey && document.activeElement.id !== 'user-input') {
             toggleDebugger();
+        }
+    });
+
+    /**
+     * CONSOLE INPUT LOGIC
+     */
+    const userInput = document.getElementById('user-input');
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !window.isSystemCrashed) {
+            const text = userInput.value.trim();
+            if (text !== "") {
+                const consoleContent = document.getElementById("console-content");
+                const entry = document.createElement("div");
+                entry.style.marginBottom = "10px";
+                entry.style.color = "#ffffff"; // User text is white for contrast
+                entry.innerText = `>> [USER]: ${text}`;
+                
+                consoleContent.appendChild(entry);
+                consoleContent.scrollTop = consoleContent.scrollHeight;
+                userInput.value = "";
+            }
         }
     });
 
@@ -396,6 +442,8 @@
         window.isSystemCrashed = true;
         document.getElementById('rebootBtn').style.display = 'block';
         document.getElementById('crashBtn').style.display = 'none';
+        userInput.disabled = true;
+        userInput.placeholder = "SYSTEM OFFLINE...";
     }
 
     /**
@@ -405,6 +453,8 @@
         window.isSystemCrashed = false;
         document.getElementById('rebootBtn').style.display = 'none';
         document.getElementById('crashBtn').style.display = 'block';
+        userInput.disabled = false;
+        userInput.placeholder = "Enter message...";
         mainUpdateLoop();
     }
 
