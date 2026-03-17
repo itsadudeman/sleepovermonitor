@@ -299,14 +299,7 @@
     let toggleKey = localStorage.getItem('debug_toggle_key') || 'd';
     let isListeningForKey = false;
 
-    const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); // Bird Chirp
-    const facts = [
-        "Birds don't have sweat glands.",
-        "The heart of a shrimp is located in its head.",
-        "A snail can sleep for three years.",
-        "The longest recorded flight of a chicken is 13 seconds.",
-        "Slugs have four noses."
-    ];
+    const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); 
 
     /**
      * KEYBIND SYSTEM
@@ -356,24 +349,62 @@
     });
 
     /**
-     * CONSOLE INPUT & COMMANDS
+     * CONSOLE LOGGING HELPER
      */
-    const userInput = document.getElementById('user-input');
-    const consoleContent = document.getElementById("console-content");
-
-    function logToConsole(message, isUser = false, isLog = false) {
+    function logToConsole(message, type = "LOG") {
+        const consoleContent = document.getElementById("console-content");
         const entry = document.createElement("div");
         entry.style.marginBottom = "10px";
-        if (isUser) {
+        
+        if (type === "USER") {
             entry.style.color = "#ffffff";
             entry.innerText = `>> [USER]: ${message}`;
-        } else if (isLog) {
-            entry.innerText = `>> [LOG]: ${message}`;
+        } else if (type === "ERR") {
+            entry.style.color = "#ff3131"; // Match the theme red
+            entry.innerText = `>> [ERR]: ${message}`;
+        } else if (type === "NONE") {
+             entry.innerText = message;
         } else {
-            entry.innerText = message;
+            entry.innerText = `>> [LOG]: ${message}`;
         }
+        
         consoleContent.appendChild(entry);
         consoleContent.scrollTop = consoleContent.scrollHeight;
+    }
+
+    /**
+     * COMMAND LOGIC
+     */
+    const userInput = document.getElementById('user-input');
+
+    async function handleFacts() {
+        // Maw. :3 Rarity (1 in 10)
+        if (Math.random() < 0.1) {
+            logToConsole("Maw. :3");
+            return;
+        }
+
+        const factPool = [
+            "Did you know this project was originally run under \"about:blank\"? It took .what_0 a few tries only for them to realize it was because of \"about:blank\". Hence, the project is now run under GitHub Pages!",
+            "Despite this being made by Gemini 3.0 Fast, .what_0 had a bit of help from ChatGPT. However, GPT's efforts proved useless in the end.",
+            "I look to my right. No one. I look to my left. No one. These partners stink of POO.",
+            "Now playing: ...Hah, I can't play music. ETERNAL SILENCE FOREVER. I'M GOING INSANE.....",
+            "TERMINATE_SEQUENCE" // special tag for the self-destruct sequence
+        ];
+
+        let selected = factPool[Math.floor(Math.random() * factPool.length)];
+
+        if (selected === "TERMINATE_SEQUENCE") {
+            logToConsole("You know what? I don't feel like telling you a fact! In fact, how about I self-terminate right now!");
+            for(let i=0; i<3; i++) {
+                await new Promise(r => setTimeout(r, 500));
+                logToConsole("Failed to terminate program.", "ERR");
+            }
+            await new Promise(r => setTimeout(r, 200));
+            logToConsole("Dang it.. :(");
+        } else {
+            logToConsole(selected);
+        }
     }
 
     userInput.addEventListener('keydown', (e) => {
@@ -381,20 +412,22 @@
             const rawText = userInput.value.trim();
             if (rawText === "") return;
 
-            logToConsole(rawText, true);
+            logToConsole(rawText, "USER");
             const cmd = rawText.toLowerCase();
 
-            // Command Processing
             if (cmd === "//clear") {
-                consoleContent.innerHTML = "";
+                document.getElementById("console-content").innerHTML = "";
             } 
             else if (cmd === "//bird") {
                 birdSfx.play();
-                logToConsole("Audio pulse emitted (Chirp).", false, true);
+                logToConsole("Audio pulse emitted (Chirp).");
             } 
             else if (cmd === "//fact") {
-                const randomFact = facts[Math.floor(Math.random() * facts.length)];
-                logToConsole(randomFact, false, true);
+                handleFacts();
+            }
+            else if (cmd === "//yesorno") {
+                const response = Math.random() > 0.5 ? "Mhm.. Yeah." : "Nah, nuh-uh.";
+                logToConsole(response);
             }
             else if (cmd.startsWith("//modifytime")) {
                 const parts = rawText.split(' ');
@@ -403,25 +436,23 @@
                     const offset = parseFloat(tz);
                     if (!isNaN(offset)) {
                         currentTimezoneOffset = offset;
-                        logToConsole(`Temporal alignment shifted to UTC${offset >= 0 ? '+' : ''}${offset}.`, false, true);
+                        logToConsole(`Temporal alignment shifted to UTC${offset >= 0 ? '+' : ''}${offset}.`);
                     } else {
-                        logToConsole("ERR: Invalid offset format.", false, true);
+                        logToConsole("Invalid offset format.", "ERR");
                     }
-                } else {
-                    logToConsole("ERR: Timezone required (e.g., //modifytime UTC+5).", false, true);
                 }
             }
             else if (cmd === "//stopticker") {
                 document.getElementById('main-ticker').classList.toggle('paused');
-                logToConsole("Ticker animation state toggled.", false, true);
+                logToConsole("Ticker animation state toggled.");
             }
             else if (cmd === "//terminatedebugger") {
                 window.debuggerTerminated = true;
                 document.getElementById('debugger').classList.add('hidden');
-                logToConsole("FATAL: Debugger kernel terminated. Restart required to re-init.", false, true);
+                logToConsole("FATAL: Debugger kernel terminated. Restart required.", "ERR");
             }
             else if (cmd === "//help") {
-                logToConsole("Available: //clear, //bird, //fact, //modifytime [tz], //stopticker, //terminatedebugger");
+                logToConsole("Available: //clear, //bird, //fact, //yesorno, //modifytime [tz], //stopticker, //terminatedebugger", "NONE");
             }
 
             userInput.value = "";
@@ -441,7 +472,7 @@
         try {
             let activeModules = 0;
 
-            // --- 1. CLOCK MODULE (Supports Dynamic Offset) ---
+            // --- 1. CLOCK MODULE ---
             const tickerClock = document.getElementById("ticker-clock");
             if (tickerClock) {
                 const offsetMs = currentTimezoneOffset * 60 * 60 * 1000;
@@ -466,22 +497,19 @@
                 activeModules++;
             }
 
-            // --- 3. CONSOLE LOGGING MODULE ---
+            // --- 3. CONSOLE PULSE ---
             const totalMinutes = Math.floor((nowMs - START_TIME) / 60000);
             if (totalMinutes !== lastLoggedMinute) {
                 const diff = nowMs - START_TIME;
                 const h = Math.floor(diff / 3600000) % 24;
                 const d = Math.floor(diff / 86400000);
-                logToConsole(`System pulse detected. Total time: ${d}d ${h}h ${totalMinutes % 60}m.`, false, true);
+                logToConsole(`System pulse detected. Total time: ${d}d ${h}h ${totalMinutes % 60}m.`);
                 lastLoggedMinute = totalMinutes;
-                activeModules++;
-            } else {
-                activeModules++; // Console is still "active"
             }
+            activeModules++;
 
             // --- DEBUGGER UPDATES ---
             document.getElementById("debug-status").innerText = "RUNNING";
-            document.getElementById("debug-status").style.color = "#00ff00";
             document.getElementById("debug-modules").innerText = `${activeModules}/3 ACTIVE`;
             const msStr = String(now.getMilliseconds()).padStart(3, "0");
             document.getElementById("debug-ms").innerText = `${now.toLocaleTimeString()}.${msStr}`;
