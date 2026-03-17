@@ -12,9 +12,10 @@
             color: #ff3131;
             font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
             height: 100vh;
+            width: 100vw;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden; /* Lock the whole viewport */
             position: relative;
         }
 
@@ -120,6 +121,7 @@
             font-weight: 900;
             font-size: 1.8rem;
             border-bottom: 3px solid #330000;
+            flex-shrink: 0;
         }
 
         .ticker {
@@ -137,19 +139,28 @@
             100% { transform: translate(-100%, 0); }
         }
 
-        /* MAIN CONTENT */
+        /* MAIN CONTENT - FIXED HEIGHT BOUNDARIES */
         .container {
             display: flex;
-            flex: 1;
-            padding: 50px;
-            gap: 50px;
-            align-items: center;
+            flex: 1; /* Takes remaining space between ticker and footer */
+            padding: 40px;
+            gap: 40px;
+            align-items: stretch; /* Stretch children to fill the flex height */
+            overflow: hidden;
+            min-height: 0; /* Important for flex children scrolling */
         }
 
-        .timer-section { flex: 1; display: flex; flex-direction: column; }
-        .big-numbers { font-size: 8rem; font-weight: 900; line-height: 0.9; margin-bottom: 20px;}
+        .timer-section { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            min-width: 0; 
+        }
+
+        .big-numbers { font-size: clamp(3rem, 8vw, 8rem); font-weight: 900; line-height: 0.9; margin-bottom: 20px;}
         .total-hours-display { 
-            font-size: 2.5rem; 
+            font-size: clamp(1.5rem, 3vw, 2.5rem); 
             color: #ff3131; 
             opacity: 0.9; 
             border-top: 2px solid #330000; 
@@ -158,21 +169,23 @@
         }
 
         .console-box {
-            flex: 1;
+            flex: 1.2;
             background-color: #08162f;
-            height: 85%;
             display: flex;
             flex-direction: column;
             border: 1px solid #1a2a44;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            min-width: 0;
+            min-height: 0; /* Prevents box from expanding past container */
         }
 
         .console-header {
             color: #3d8bff;
             padding: 15px;
-            font-size: 2rem;
+            font-size: 1.8rem;
             border-bottom: 2px solid #060f21;
             background: rgba(0,0,0,0.2);
+            flex-shrink: 0;
         }
 
         #console-content {
@@ -180,9 +193,17 @@
             overflow-y: auto;
             padding: 15px;
             color: #3d8bff;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             line-height: 1.4;
+            word-wrap: break-word;
+            /* Scrollbar styling for a cleaner look */
+            scrollbar-width: thin;
+            scrollbar-color: #1a2a44 #08162f;
         }
+
+        #console-content::-webkit-scrollbar { width: 8px; }
+        #console-content::-webkit-scrollbar-track { background: #08162f; }
+        #console-content::-webkit-scrollbar-thumb { background: #1a2a44; border-radius: 4px; }
 
         .console-input-area {
             display: flex;
@@ -190,13 +211,14 @@
             padding: 15px;
             border-top: 1px solid #1a2a44;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .console-prefix {
             color: #3d8bff;
             margin-right: 10px;
             font-weight: bold;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
         }
 
         #user-input {
@@ -204,12 +226,19 @@
             border: none;
             color: #fff;
             font-family: 'Consolas', monospace;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             flex: 1;
             outline: none;
+            min-width: 0;
         }
 
-        .credits { padding: 20px 50px; font-size: 1rem; color: #ff3131; }
+        .credits { 
+            padding: 15px 40px; 
+            font-size: 0.9rem; 
+            color: #ff3131; 
+            flex-shrink: 0;
+            background: #0c0c0c;
+        }
         
         #toast {
             position: fixed;
@@ -230,20 +259,15 @@
     <div id="toast">DEBUGGER TOGGLED</div>
 
     <div id="debugger">
-        <div class="debug-header">
-            <span>[SYSTEM DEBUGGER]</span>
-        </div>
+        <div class="debug-header"><span>[SYSTEM DEBUGGER]</span></div>
         STATUS: <span id="debug-status">WAITING</span><br>
         HEALTH: <span id="debug-modules">0/3</span><br>
         LAST_UPDT: <span id="debug-ms">00:00:00.000</span><br>
         WATCHDUDE: <span id="watchdude-status">ACTIVE</span><br>
         ERRORS: <span id="debug-errors" style="color: #00ff00;">NONE</span><br>
-        
         <div class="debug-settings">
             TOGGLE KEY: <span id="keybind-display" class="keybind-setter" onclick="startListeningForKey()">D</span>
-            <div style="font-size: 0.6rem; opacity: 0.7; margin-top: 4px;">(Click to change)</div>
         </div>
-
         <button id="crashBtn" class="crash-btn" onclick="triggerManualCrash()">[SIMULATE CRASH]</button>
         <button id="rebootBtn" class="reboot-btn" onclick="systemReboot()">[SYSTEM REBOOT]</button>
     </div>
@@ -256,7 +280,7 @@
 
     <div class="container">
         <div class="timer-section">
-            <div style="font-size: 1.5rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">Session Duration</div>
+            <div style="font-size: 1.2rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">Session Duration</div>
             <div class="big-numbers">
                 <span id="display-days">--</span> days<br>
                 <span id="display-hours">--</span> hours
@@ -264,7 +288,7 @@
             <div class="total-hours-display">
                 TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
             </div>
-            <div style="font-size: 1.1rem; margin-top: 30px; opacity: 0.6;">
+            <div style="font-size: 1rem; margin-top: 20px; opacity: 0.6;">
                 Tracking started: March 15, 2026 @ 12:22PM (GMT+8)
             </div>
         </div>
@@ -280,53 +304,28 @@
     </div>
 
     <div class="credits">
-        THIS MONITORING WEBSITE WAS MADE BY<br>
-        .what_0 AND Gemini 3.0 Fast
+        THIS MONITORING WEBSITE WAS MADE BY .what_0 AND Gemini 3.0 Fast
     </div>
 
 <script>
-    /**
-     * GLOBAL STATE & PERSISTENCE
-     */
     const START_TIME = Date.UTC(2026, 2, 15, 4, 22, 0); 
     window.heartbeatCount = 0;
     window.isSystemCrashed = false;
     window.debuggerTerminated = false;
     let lastLoggedMinute = -1;
-    let currentTimezoneOffset = 8; // Default GMT+8
-    
-    // Keybind logic
+    let currentTimezoneOffset = 8; 
     let toggleKey = localStorage.getItem('debug_toggle_key') || 'd';
     let isListeningForKey = false;
 
+    const MAX_LOGS = 100;
     const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); 
 
-    /**
-     * KEYBIND SYSTEM
-     */
-    function updateKeybindDisplay() {
-        document.getElementById('keybind-display').innerText = toggleKey.toUpperCase();
-    }
-
-    function startListeningForKey() {
-        isListeningForKey = true;
-        const btn = document.getElementById('keybind-display');
-        btn.classList.add('listening');
-        btn.innerText = '...';
-    }
-
-    function showToast(text) {
-        const toast = document.getElementById('toast');
-        toast.innerText = text;
-        toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 1500);
-    }
+    function updateKeybindDisplay() { document.getElementById('keybind-display').innerText = toggleKey.toUpperCase(); }
+    function startListeningForKey() { isListeningForKey = true; const btn = document.getElementById('keybind-display'); btn.classList.add('listening'); btn.innerText = '...'; }
+    function showToast(text) { const toast = document.getElementById('toast'); toast.innerText = text; toast.style.display = 'block'; setTimeout(() => toast.style.display = 'none', 1500); }
 
     function toggleDebugger() {
-        if (window.debuggerTerminated) {
-            showToast("ERROR: DEBUGGER CORE DELETED");
-            return;
-        }
+        if (window.debuggerTerminated) { showToast("ERROR: DEBUGGER CORE DELETED"); return; }
         const debugPanel = document.getElementById('debugger');
         const isHidden = debugPanel.classList.toggle('hidden');
         showToast(isHidden ? "DEBUGGER HIDDEN" : "DEBUGGER SHOWN");
@@ -342,25 +341,25 @@
             updateKeybindDisplay();
             return;
         }
-
-        if (e.key.toLowerCase() === toggleKey && document.activeElement.id !== 'user-input') {
-            toggleDebugger();
-        }
+        if (e.key.toLowerCase() === toggleKey && document.activeElement.id !== 'user-input') { toggleDebugger(); }
     });
 
-    /**
-     * CONSOLE LOGGING HELPER
-     */
     function logToConsole(message, type = "LOG") {
         const consoleContent = document.getElementById("console-content");
+        
+        // Remove oldest if over limit
+        while (consoleContent.children.length >= MAX_LOGS) {
+            consoleContent.removeChild(consoleContent.firstChild);
+        }
+
         const entry = document.createElement("div");
-        entry.style.marginBottom = "10px";
+        entry.style.marginBottom = "8px";
         
         if (type === "USER") {
             entry.style.color = "#ffffff";
             entry.innerText = `>> [USER]: ${message}`;
         } else if (type === "ERR") {
-            entry.style.color = "#ff3131"; // Match the theme red
+            entry.style.color = "#ff3131";
             entry.innerText = `>> [ERR]: ${message}`;
         } else if (type === "NONE") {
              entry.innerText = message;
@@ -372,216 +371,111 @@
         consoleContent.scrollTop = consoleContent.scrollHeight;
     }
 
-    /**
-     * COMMAND LOGIC
-     */
     const userInput = document.getElementById('user-input');
 
     async function handleFacts() {
-        // Maw. :3 Rarity (1 in 10)
-        if (Math.random() < 0.1) {
-            logToConsole("Maw. :3");
-            return;
-        }
-
+        if (Math.random() < 0.1) { logToConsole("Maw. :3"); return; }
         const factPool = [
             "Did you know this project was originally run under \"about:blank\"? It took .what_0 a few tries only for them to realize it was because of \"about:blank\". Hence, the project is now run under GitHub Pages!",
             "Despite this being made by Gemini 3.0 Fast, .what_0 had a bit of help from ChatGPT. However, GPT's efforts proved useless in the end.",
             "I look to my right. No one. I look to my left. No one. These partners stink of POO.",
             "Now playing: ...Hah, I can't play music. ETERNAL SILENCE FOREVER. I'M GOING INSANE.....",
-            "TERMINATE_SEQUENCE" // special tag for the self-destruct sequence
+            "TERMINATE_SEQUENCE"
         ];
-
         let selected = factPool[Math.floor(Math.random() * factPool.length)];
-
         if (selected === "TERMINATE_SEQUENCE") {
             logToConsole("You know what? I don't feel like telling you a fact! In fact, how about I self-terminate right now!");
             for(let i=0; i<3; i++) {
                 await new Promise(r => setTimeout(r, 500));
                 logToConsole("Failed to terminate program.", "ERR");
             }
-            await new Promise(r => setTimeout(r, 200));
             logToConsole("Dang it.. :(");
-        } else {
-            logToConsole(selected);
-        }
+        } else { logToConsole(selected); }
     }
 
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !window.isSystemCrashed) {
             const rawText = userInput.value.trim();
             if (rawText === "") return;
-
             logToConsole(rawText, "USER");
             const cmd = rawText.toLowerCase();
 
-            if (cmd === "//clear") {
-                document.getElementById("console-content").innerHTML = "";
-            } 
-            else if (cmd === "//bird") {
-                birdSfx.play();
-                logToConsole("Audio pulse emitted (Chirp).");
-            } 
-            else if (cmd === "//fact") {
-                handleFacts();
-            }
-            else if (cmd === "//yesorno") {
-                const response = Math.random() > 0.5 ? "Mhm.. Yeah." : "Nah, nuh-uh.";
-                logToConsole(response);
-            }
+            if (cmd === "//clear") { document.getElementById("console-content").innerHTML = ""; } 
+            else if (cmd === "//bird") { birdSfx.play(); logToConsole("Audio pulse emitted (Chirp)."); } 
+            else if (cmd === "//fact") { handleFacts(); }
+            else if (cmd === "//yesorno") { logToConsole(Math.random() > 0.5 ? "Mhm.. Yeah." : "Nah, nuh-uh."); }
             else if (cmd.startsWith("//modifytime")) {
                 const parts = rawText.split(' ');
                 if (parts.length > 1) {
-                    const tz = parts[1].toUpperCase().replace('UTC', '');
-                    const offset = parseFloat(tz);
-                    if (!isNaN(offset)) {
-                        currentTimezoneOffset = offset;
-                        logToConsole(`Temporal alignment shifted to UTC${offset >= 0 ? '+' : ''}${offset}.`);
-                    } else {
-                        logToConsole("Invalid offset format.", "ERR");
-                    }
+                    const offset = parseFloat(parts[1].toUpperCase().replace('UTC', ''));
+                    if (!isNaN(offset)) { currentTimezoneOffset = offset; logToConsole(`Temporal alignment shifted to UTC${offset >= 0 ? '+' : ''}${offset}.`); }
+                    else { logToConsole("Invalid offset format.", "ERR"); }
                 }
             }
-            else if (cmd === "//stopticker") {
-                document.getElementById('main-ticker').classList.toggle('paused');
-                logToConsole("Ticker animation state toggled.");
-            }
-            else if (cmd === "//terminatedebugger") {
-                window.debuggerTerminated = true;
-                document.getElementById('debugger').classList.add('hidden');
-                logToConsole("FATAL: Debugger kernel terminated. Restart required.", "ERR");
-            }
-            else if (cmd === "//help") {
-                logToConsole("Available: //clear, //bird, //fact, //yesorno, //modifytime [tz], //stopticker, //terminatedebugger", "NONE");
-            }
-
+            else if (cmd === "//stopticker") { document.getElementById('main-ticker').classList.toggle('paused'); logToConsole("Ticker state toggled."); }
+            else if (cmd === "//terminatedebugger") { window.debuggerTerminated = true; document.getElementById('debugger').classList.add('hidden'); logToConsole("FATAL: Debugger kernel terminated.", "ERR"); }
+            else if (cmd === "//help") { logToConsole("Available: //clear, //bird, //fact, //yesorno, //modifytime [tz], //stopticker, //terminatedebugger", "NONE"); }
             userInput.value = "";
         }
     });
 
-    /**
-     * MAIN LOGIC LOOP
-     */
     function mainUpdateLoop() {
         if (window.isSystemCrashed) return; 
-
         window.heartbeatCount++;
         const now = new Date();
         const nowMs = now.getTime();
         
         try {
-            let activeModules = 0;
-
-            // --- 1. CLOCK MODULE ---
             const tickerClock = document.getElementById("ticker-clock");
             if (tickerClock) {
-                const offsetMs = currentTimezoneOffset * 60 * 60 * 1000;
-                const targetTime = new Date(nowMs + (now.getTimezoneOffset() * 60000) + offsetMs);
+                const targetTime = new Date(nowMs + (now.getTimezoneOffset() * 60000) + (currentTimezoneOffset * 3600000));
                 let h = targetTime.getHours();
                 const ampm = h >= 12 ? "PM" : "AM";
                 h = h % 12 || 12;
                 tickerClock.innerText = `${h}:${String(targetTime.getMinutes()).padStart(2, "0")}:${String(targetTime.getSeconds()).padStart(2, "0")} ${ampm}`;
-                activeModules++;
             }
 
-            // --- 2. DURATION MODULE ---
-            const dDay = document.getElementById("display-days");
-            const dHour = document.getElementById("display-hours");
-            const dTotal = document.getElementById("display-total-hours");
-            if (dDay && dHour && dTotal) {
-                const diff = nowMs - START_TIME;
-                const totalHours = Math.floor(diff / (1000 * 60 * 60));
-                dDay.innerText = Math.floor(totalHours / 24);
-                dHour.innerText = totalHours % 24;
-                dTotal.innerText = totalHours;
-                activeModules++;
-            }
+            const diff = nowMs - START_TIME;
+            const totalHours = Math.floor(diff / 3600000);
+            document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
+            document.getElementById("display-hours").innerText = totalHours % 24;
+            document.getElementById("display-total-hours").innerText = totalHours;
 
-            // --- 3. CONSOLE PULSE ---
-            const totalMinutes = Math.floor((nowMs - START_TIME) / 60000);
+            const totalMinutes = Math.floor(diff / 60000);
             if (totalMinutes !== lastLoggedMinute) {
-                const diff = nowMs - START_TIME;
-                const h = Math.floor(diff / 3600000) % 24;
-                const d = Math.floor(diff / 86400000);
-                logToConsole(`System pulse detected. Total time: ${d}d ${h}h ${totalMinutes % 60}m.`);
+                logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
                 lastLoggedMinute = totalMinutes;
             }
-            activeModules++;
 
-            // --- DEBUGGER UPDATES ---
             document.getElementById("debug-status").innerText = "RUNNING";
-            document.getElementById("debug-modules").innerText = `${activeModules}/3 ACTIVE`;
-            const msStr = String(now.getMilliseconds()).padStart(3, "0");
-            document.getElementById("debug-ms").innerText = `${now.toLocaleTimeString()}.${msStr}`;
+            document.getElementById("debug-ms").innerText = `${now.toLocaleTimeString()}.${String(now.getMilliseconds()).padStart(3, "0")}`;
             document.getElementById("debug-errors").innerText = window.debuggerTerminated ? "DELETED" : "NONE";
             document.getElementById("debug-errors").style.color = window.debuggerTerminated ? "#ff00ff" : "#00ff00";
 
         } catch (err) {
             document.getElementById("debug-status").innerText = "MODULE ERROR";
             document.getElementById("debug-errors").innerText = err.message;
-            document.getElementById("debug-errors").style.color = "#ff0000";
         }
-
         requestAnimationFrame(mainUpdateLoop);
     }
 
-    function triggerManualCrash() {
-        window.isSystemCrashed = true;
-        document.getElementById('rebootBtn').style.display = 'block';
-        document.getElementById('crashBtn').style.display = 'none';
-        userInput.disabled = true;
-        userInput.placeholder = "SYSTEM OFFLINE...";
-    }
+    function triggerManualCrash() { window.isSystemCrashed = true; document.getElementById('rebootBtn').style.display = 'block'; document.getElementById('crashBtn').style.display = 'none'; userInput.disabled = true; userInput.placeholder = "OFFLINE"; }
+    function systemReboot() { window.isSystemCrashed = false; document.getElementById('rebootBtn').style.display = 'none'; document.getElementById('crashBtn').style.display = 'block'; userInput.disabled = false; userInput.placeholder = "Type //help..."; mainUpdateLoop(); }
 
-    function systemReboot() {
-        window.isSystemCrashed = false;
-        document.getElementById('rebootBtn').style.display = 'none';
-        document.getElementById('crashBtn').style.display = 'block';
-        userInput.disabled = false;
-        userInput.placeholder = "Type //help for commands...";
-        mainUpdateLoop();
-    }
+    setInterval(() => {
+        const db = document.getElementById("debugger");
+        const wd = document.getElementById("watchdude-status");
+        if (window.heartbeatCount === (window.lastHb || 0)) {
+            db.style.background = "rgba(100, 0, 150, 1)";
+            wd.innerText = "CRASH DETECTED";
+        } else {
+            window.lastHb = window.heartbeatCount;
+            if (!db.classList.contains('hidden') && !window.debuggerTerminated) db.style.background = "rgba(0, 30, 0, 0.95)";
+            wd.innerText = "ACTIVE";
+        }
+    }, 200);
 
-    function startWatchdude() {
-        let lastKnownHeartbeat = -1;
-        let failCount = 0;
-        setInterval(() => {
-            const debugBox = document.getElementById("debugger");
-            const watchdogText = document.getElementById("watchdude-status");
-            const statusText = document.getElementById("debug-status");
-            if (window.heartbeatCount === lastKnownHeartbeat) {
-                failCount++;
-                if (failCount >= 3) {
-                    debugBox.style.background = "rgba(100, 0, 150, 1)";
-                    debugBox.style.border = "3px solid #ff00ff";
-                    watchdogText.innerText = "CRASH DETECTED";
-                    watchdogText.style.color = "#ffffff";
-                    statusText.innerText = "SYSTEM FROZEN";
-                    statusText.style.color = "#ff00ff";
-                }
-            } else {
-                failCount = 0;
-                lastKnownHeartbeat = window.heartbeatCount;
-                if (!debugBox.classList.contains('hidden') && !window.debuggerTerminated) {
-                    debugBox.style.background = "rgba(0, 30, 0, 0.95)";
-                    debugBox.style.border = "2px solid #00ff00";
-                }
-                watchdogText.innerText = "ACTIVE";
-                watchdogText.style.color = "#00ff00";
-                if (statusText.innerText === "SYSTEM FROZEN") {
-                   statusText.innerText = "RUNNING";
-                   statusText.style.color = "#00ff00";
-                }
-            }
-        }, 100);
-    }
-
-    window.onload = () => {
-        updateKeybindDisplay();
-        mainUpdateLoop();
-        startWatchdude();
-    };
+    window.onload = () => { updateKeybindDisplay(); mainUpdateLoop(); };
 </script>
-
 </body>
 </html>
