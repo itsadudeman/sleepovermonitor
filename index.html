@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleepover VC Monitoring - System Active</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #0c0c0c;
+            color: #ff3131;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* SYSTEM DEBUGGER OVERLAY */
+        #debugger {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 99999; 
+            background: rgba(0, 30, 0, 0.95);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 12px;
+            font-size: 0.75rem;
+            width: 320px;
+            pointer-events: auto;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+        }
+
+        #debugger.hidden {
+            transform: translateX(-110%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .debug-header {
+            border-bottom: 1px solid #00ff00;
+            margin-bottom: 8px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* SETTINGS SECTION */
+        .debug-settings {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #00ff00;
+            font-size: 0.7rem;
+        }
+
+        .keybind-setter {
+            background: #004400;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 2px 5px;
+            cursor: pointer;
+            display: inline-block;
+            margin-left: 5px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .keybind-setter.listening {
+            background: #00ff00;
+            color: #000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .crash-btn {
+            margin-top: 10px;
+            background: #440000;
+            color: #ffaaaa;
+            border: 1px solid #ff0000;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-family: 'Consolas', monospace;
+            font-size: 0.65rem;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .crash-btn:hover { background: #aa0000; color: white; }
+
+        .reboot-btn {
+            margin-top: 5px;
+            background: #004400;
+            color: #aaffaa;
+            border: 1px solid #00ff00;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-family: 'Consolas', monospace;
+            font-size: 0.65rem;
+            width: 100%;
+            display: none;
+        }
+
+        /* TICKER STYLING */
+        .ticker-wrap {
+            background-color: #ff0000;
+            color: #000;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 12px 0;
+            font-weight: 900;
+            font-size: 1.8rem;
+            border-bottom: 3px solid #330000;
+        }
+
+        .ticker {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 25s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100%, 0); }
+        }
+
+        /* MAIN CONTENT */
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 50px;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .timer-section { flex: 1; display: flex; flex-direction: column; }
+        .big-numbers { font-size: 8rem; font-weight: 900; line-height: 0.9; margin-bottom: 20px;}
+        .total-hours-display { 
+            font-size: 2.5rem; 
+            color: #ff3131; 
+            opacity: 0.9; 
+            border-top: 2px solid #330000; 
+            padding-top: 15px;
+            font-weight: bold;
+        }
+
+        .console-box {
+            flex: 1;
+            background-color: #08162f;
+            height: 85%;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #1a2a44;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .console-header {
+            color: #3d8bff;
+            padding: 15px;
+            font-size: 2rem;
+            border-bottom: 2px solid #060f21;
+            background: rgba(0,0,0,0.2);
+        }
+
+        #console-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            color: #3d8bff;
+            font-size: 1.3rem;
+            line-height: 1.4;
+        }
+
+        .credits { padding: 20px 50px; font-size: 1rem; color: #ff3131; }
+        
+        /* Toast notification for keybind */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #00ff00;
+            color: #000;
+            padding: 10px 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: none;
+            z-index: 100000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast">DEBUGGER TOGGLED</div>
+
+    <!-- DEBUGGER -->
+    <div id="debugger">
+        <div class="debug-header">
+            <span>[SYSTEM DEBUGGER]</span>
+        </div>
+        STATUS: <span id="debug-status">WAITING</span><br>
+        HEALTH: <span id="debug-modules">0/3</span><br>
+        LAST_UPDT: <span id="debug-ms">00:00:00.000</span><br>
+        WATCHDUDE: <span id="watchdude-status">ACTIVE</span><br>
+        ERRORS: <span id="debug-errors" style="color: #00ff00;">NONE</span><br>
+        
+        <div class="debug-settings">
+            TOGGLE KEY: <span id="keybind-display" class="keybind-setter" onclick="startListeningForKey()">D</span>
+            <div style="font-size: 0.6rem; opacity: 0.7; margin-top: 4px;">(Click to change)</div>
+        </div>
+
+        <button id="crashBtn" class="crash-btn" onclick="triggerManualCrash()">[SIMULATE CRASH]</button>
+        <button id="rebootBtn" class="reboot-btn" onclick="systemReboot()">[SYSTEM REBOOT]</button>
+    </div>
+
+    <!-- MARQUEE TICKER -->
+    <div class="ticker-wrap">
+        <div class="ticker">
+            WELCOME TO THE SLEEPOVER VC MONITORING WEBSITE :-) // THE CURRENT TIME IS <span id="ticker-clock">...</span> // SYSTEM STATUS: OPTIMAL //
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div class="container">
+        <div class="timer-section">
+            <div style="font-size: 1.5rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">Session Duration</div>
+            <div class="big-numbers">
+                <span id="display-days">--</span> days<br>
+                <span id="display-hours">--</span> hours
+            </div>
+            <div class="total-hours-display">
+                TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
+            </div>
+            <div style="font-size: 1.1rem; margin-top: 30px; opacity: 0.6;">
+                Tracking started: March 15, 2026 @ 12:22PM (GMT+8)
+            </div>
+        </div>
+
+        <div class="console-box">
+            <div class="console-header">Birds Console</div>
+            <div id="console-content"></div>
+        </div>
+    </div>
+
+    <div class="credits">
+        THIS MONITORING WEBSITE WAS MADE BY<br>
+        .what_0 AND Gemini 3.0 Fast
+    </div>
+
+<script>
+    /**
+     * GLOBAL STATE & PERSISTENCE
+     */
+    const START_TIME = Date.UTC(2026, 2, 15, 4, 22, 0); 
+    window.heartbeatCount = 0;
+    window.isSystemCrashed = false;
+    let lastLoggedMinute = -1;
+    
+    // Keybind logic
+    let toggleKey = localStorage.getItem('debug_toggle_key') || 'd';
+    let isListeningForKey = false;
+
+    /**
+     * KEYBIND SYSTEM
+     */
+    function updateKeybindDisplay() {
+        document.getElementById('keybind-display').innerText = toggleKey.toUpperCase();
+    }
+
+    function startListeningForKey() {
+        isListeningForKey = true;
+        const btn = document.getElementById('keybind-display');
+        btn.classList.add('listening');
+        btn.innerText = '...';
+    }
+
+    function showToast(text) {
+        const toast = document.getElementById('toast');
+        toast.innerText = text;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 1500);
+    }
+
+    function toggleDebugger() {
+        const debugPanel = document.getElementById('debugger');
+        const isHidden = debugPanel.classList.toggle('hidden');
+        showToast(isHidden ? "DEBUGGER HIDDEN" : "DEBUGGER SHOWN");
+    }
+
+    // Global Key Listener
+    window.addEventListener('keydown', (e) => {
+        // Handle remapping
+        if (isListeningForKey) {
+            e.preventDefault();
+            toggleKey = e.key.toLowerCase();
+            localStorage.setItem('debug_toggle_key', toggleKey);
+            isListeningForKey = false;
+            document.getElementById('keybind-display').classList.remove('listening');
+            updateKeybindDisplay();
+            return;
+        }
+
+        // Handle triggering
+        if (e.key.toLowerCase() === toggleKey) {
+            toggleDebugger();
+        }
+    });
+
+    /**
+     * MAIN LOGIC LOOP
+     */
+    function mainUpdateLoop() {
+        if (window.isSystemCrashed) return; 
+
+        window.heartbeatCount++;
+        const now = new Date();
+        const nowMs = now.getTime();
+        
+        try {
+            let activeModules = 0;
+
+            // --- 1. CLOCK MODULE ---
+            const tickerClock = document.getElementById("ticker-clock");
+            if (tickerClock) {
+                const gmt8Offset = 8 * 60 * 60 * 1000;
+                const gmt8Time = new Date(nowMs + (now.getTimezoneOffset() * 60000) + gmt8Offset);
+                let h = gmt8Time.getHours();
+                const ampm = h >= 12 ? "PM" : "AM";
+                h = h % 12 || 12;
+                tickerClock.innerText = `${h}:${String(gmt8Time.getMinutes()).padStart(2, "0")}:${String(gmt8Time.getSeconds()).padStart(2, "0")} ${ampm}`;
+                activeModules++;
+            }
+
+            // --- 2. DURATION MODULE ---
+            const dDay = document.getElementById("display-days");
+            const dHour = document.getElementById("display-hours");
+            const dTotal = document.getElementById("display-total-hours");
+            if (dDay && dHour && dTotal) {
+                const diff = nowMs - START_TIME;
+                const totalHours = Math.floor(diff / (1000 * 60 * 60));
+                dDay.innerText = Math.floor(totalHours / 24);
+                dHour.innerText = totalHours % 24;
+                dTotal.innerText = totalHours;
+                activeModules++;
+            }
+
+            // --- 3. CONSOLE LOGGING MODULE ---
+            const consoleContent = document.getElementById("console-content");
+            if (consoleContent) {
+                const totalMinutes = Math.floor((nowMs - START_TIME) / 60000);
+                if (totalMinutes !== lastLoggedMinute) {
+                    const diff = nowMs - START_TIME;
+                    const h = Math.floor(diff / 3600000) % 24;
+                    const d = Math.floor(diff / 86400000);
+                    const entry = document.createElement("div");
+                    entry.style.marginBottom = "10px";
+                    entry.innerText = `>> [LOG]: System pulse detected. Timer advanced. Total time: ${d}d ${h}h ${totalMinutes % 60}m.`;
+                    consoleContent.appendChild(entry);
+                    consoleContent.scrollTop = consoleContent.scrollHeight;
+                    lastLoggedMinute = totalMinutes;
+                }
+                activeModules++;
+            }
+
+            // --- DEBUGGER UPDATES ---
+            document.getElementById("debug-status").innerText = "RUNNING";
+            document.getElementById("debug-status").style.color = "#00ff00";
+            document.getElementById("debug-modules").innerText = `${activeModules}/3 ACTIVE`;
+            const msStr = String(now.getMilliseconds()).padStart(3, "0");
+            document.getElementById("debug-ms").innerText = `${now.toLocaleTimeString()}.${msStr}`;
+            document.getElementById("debug-errors").innerText = "NONE";
+            document.getElementById("debug-errors").style.color = "#00ff00";
+
+        } catch (err) {
+            document.getElementById("debug-status").innerText = "MODULE ERROR";
+            document.getElementById("debug-errors").innerText = err.message;
+            document.getElementById("debug-errors").style.color = "#ff0000";
+        }
+
+        requestAnimationFrame(mainUpdateLoop);
+    }
+
+    /**
+     * MANUAL CRASH TRIGGER
+     */
+    function triggerManualCrash() {
+        window.isSystemCrashed = true;
+        document.getElementById('rebootBtn').style.display = 'block';
+        document.getElementById('crashBtn').style.display = 'none';
+    }
+
+    /**
+     * SYSTEM REBOOT
+     */
+    function systemReboot() {
+        window.isSystemCrashed = false;
+        document.getElementById('rebootBtn').style.display = 'none';
+        document.getElementById('crashBtn').style.display = 'block';
+        mainUpdateLoop();
+    }
+
+    /**
+     * INDEPENDENT WATCHDUDE
+     */
+    function startWatchdude() {
+        let lastKnownHeartbeat = -1;
+        let failCount = 0;
+
+        setInterval(() => {
+            const debugBox = document.getElementById("debugger");
+            const watchdogText = document.getElementById("watchdude-status");
+            const statusText = document.getElementById("debug-status");
+
+            if (window.heartbeatCount === lastKnownHeartbeat) {
+                failCount++;
+                if (failCount >= 3) {
+                    debugBox.style.background = "rgba(100, 0, 150, 1)";
+                    debugBox.style.border = "3px solid #ff00ff";
+                    watchdogText.innerText = "CRASH DETECTED";
+                    watchdogText.style.color = "#ffffff";
+                    statusText.innerText = "SYSTEM FROZEN";
+                    statusText.style.color = "#ff00ff";
+                }
+            } else {
+                failCount = 0;
+                lastKnownHeartbeat = window.heartbeatCount;
+                if (!debugBox.classList.contains('hidden')) {
+                    debugBox.style.background = "rgba(0, 30, 0, 0.95)";
+                    debugBox.style.border = "2px solid #00ff00";
+                }
+                watchdogText.innerText = "ACTIVE";
+                watchdogText.style.color = "#00ff00";
+                if (statusText.innerText === "SYSTEM FROZEN") {
+                   statusText.innerText = "RUNNING";
+                   statusText.style.color = "#00ff00";
+                }
+            }
+        }, 100);
+    }
+
+    window.onload = () => {
+        updateKeybindDisplay();
+        mainUpdateLoop();
+        startWatchdude();
+    };
+</script>
+
+</body>
+</html>
