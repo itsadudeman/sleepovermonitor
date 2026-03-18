@@ -324,6 +324,7 @@
     // Fact state
     let skyboxFactShown = false;
     let argumentativeFactShown = false;
+    let mawFactShown = false;
 
     const MAX_LOGS = 100;
     const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); 
@@ -378,7 +379,7 @@
             entry.style.color = "#ff3131";
             entry.innerText = `>> [SYS]: ${message}`;
         } else if (type === "WHAT") {
-            entry.style.color = "#3d8bff";
+            entry.style.color = "#ffffff";
             entry.innerText = `>> [.what_0]: ${message}`;
         } else if (type === "NONE") {
              entry.innerText = message;
@@ -417,7 +418,9 @@
             return;
         }
 
-        if (Math.random() < 0.05) { 
+        // Maw. :3 fact occurs once per session at a 5% chance
+        if (!mawFactShown && Math.random() < 0.05) { 
+            mawFactShown = true;
             logToConsole("Maw. :3"); 
             return; 
         }
