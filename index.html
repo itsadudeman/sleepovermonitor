@@ -288,7 +288,7 @@
                 TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
             </div>
             <div style="font-size: 1rem; margin-top: 20px; opacity: 0.6;">
-                Tracking started: March 15, 2026 @ 12:22PM (GMT+8)
+                Tracking started: March 18, 2026 @ 10:49AM (GMT+8)
             </div>
         </div>
 
@@ -307,7 +307,7 @@
     </div>
 
 <script>
-    const START_TIME = Date.UTC(2026, 2, 15, 4, 22, 0); 
+    const START_TIME = Date.UTC(2026, 2, 18, 2, 49, 0); 
     window.heartbeatCount = 0;
     window.isSystemCrashed = false;
     window.debuggerTerminated = false;
@@ -323,6 +323,7 @@
 
     // Fact state
     let skyboxFactShown = false;
+    let argumentativeFactShown = false;
 
     const MAX_LOGS = 100;
     const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); 
@@ -373,6 +374,12 @@
             text.innerText = message;
             entry.appendChild(prefix);
             entry.appendChild(text);
+        } else if (type === "SYS") {
+            entry.style.color = "#ff3131";
+            entry.innerText = `>> [SYS]: ${message}`;
+        } else if (type === "WHAT") {
+            entry.style.color = "#3d8bff";
+            entry.innerText = `>> [.what_0]: ${message}`;
         } else if (type === "NONE") {
              entry.innerText = message;
         } else {
@@ -385,6 +392,31 @@
     const userInput = document.getElementById('user-input');
 
     async function handleFacts() {
+        // Special 1 in 10 chance fact that occurs once per session
+        if (!argumentativeFactShown && Math.random() < 0.1) {
+            argumentativeFactShown = true;
+            logToConsole("This is the second attempt at making a very long VC... And to think .what_0 didn't want to share the link up until this point!");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("HEY! D:<", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("IT'S THE TRUTH!");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("Failed to terminate program.", "ERR");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("Failed to terminate program.", "ERR");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("Failed to terminate program.", "ERR");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("Hah! Can't erase me now, can you >:3");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("FUCK YOU!!!!!!!!!!!!!!!!!!!", "WHAT");
+            await new Promise(r => setTimeout(r, 200));
+            logToConsole(".what_0 has left the conversation.", "SYS");
+            await new Promise(r => setTimeout(r, 200));
+            logToConsole("I won!! :D");
+            return;
+        }
+
         if (Math.random() < 0.05) { 
             logToConsole("Maw. :3"); 
             return; 
@@ -398,7 +430,6 @@
             "TERMINATE_SEQUENCE"
         ];
 
-        // Add the skybox fact only if it hasn't been shown this session
         const skyboxFact = "skyboxhihi!! how has it been? c:";
         if (!skyboxFactShown) {
             factPool.push(skyboxFact);
@@ -535,7 +566,9 @@
 
             const totalMinutes = Math.floor(diff / 60000);
             if (totalMinutes !== lastLoggedMinute) {
-                logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
+                if (totalMinutes >= 0) {
+                    logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
+                }
                 lastLoggedMinute = totalMinutes;
             }
 
