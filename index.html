@@ -254,6 +254,11 @@
             display: none;
             z-index: 100000;
         }
+
+        /* Joined chat notification style */
+        .sys-join {
+            color: #a3ffac !important;
+        }
     </style>
 </head>
 <body>
@@ -284,14 +289,14 @@
         <div class="timer-section">
             <div style="font-size: 1.2rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">Session Duration</div>
             <div class="big-numbers">
-                <span id="display-days">0</span> days<br>
-                <span id="display-hours">0</span> hours
+                <span id="display-days">--</span> days<br>
+                <span id="display-hours">--</span> hours
             </div>
             <div class="total-hours-display">
-                TOTAL: <span id="display-total-hours">0</span> HOURS ELAPSED
+                TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
             </div>
             <div style="font-size: 1rem; margin-top: 20px; opacity: 0.6;">
-                Awaiting VC start
+                Tracking started: March 19, 2026 @ 11:19AM (GMT+8)
             </div>
         </div>
 
@@ -310,8 +315,8 @@
     </div>
 
 <script>
-    // START_TIME is set to null to indicate we are awaiting initiation
-    const START_TIME = null; 
+    // Updated Start Time: March 19, 2026 @ 11:19 AM GMT+8 (3:19 AM UTC)
+    const START_TIME = Date.UTC(2026, 2, 19, 3, 19, 0); 
     window.heartbeatCount = 0;
     window.isSystemCrashed = false;
     window.debuggerTerminated = false;
@@ -329,6 +334,7 @@
     let skyboxFactShown = false;
     let argumentativeFactShown = false;
     let mawFactShown = false;
+    let hiringDramaFactShown = false; // Tracking the new fact
 
     const MAX_LOGS = 100;
     const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); 
@@ -357,13 +363,14 @@
         if (e.key.toLowerCase() === toggleKey && document.activeElement.id !== 'user-input') { toggleDebugger(); }
     });
 
-    function logToConsole(message, type = "LOG") {
+    function logToConsole(message, type = "LOG", customClass = "") {
         const consoleContent = document.getElementById("console-content");
         while (consoleContent.children.length >= MAX_LOGS) {
             consoleContent.removeChild(consoleContent.firstChild);
         }
         const entry = document.createElement("div");
         entry.style.marginBottom = "8px";
+        if (customClass) entry.className = customClass;
         
         if (type === "USER") {
             entry.style.color = "#ffffff";
@@ -397,9 +404,48 @@
     const userInput = document.getElementById('user-input');
 
     async function handleFacts() {
+        // Chance for the Hiring Drama interaction
+        if (!hiringDramaFactShown && Math.random() < 0.1) {
+            hiringDramaFactShown = true;
+            logToConsole("This job sucks.");
+            await new Promise(r => setTimeout(r, 1000));
+            logToConsole(".what_0 joined the chat.", "SYS", "sys-join");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("Your simply lucky I hired you.", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("Oh shut up.");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("YOU SHUT UP", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("NUH UH.");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("YUH UH.", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("OH YEAH??");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("UH HUH.", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("CHALLENGE ME THEN 3:<");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("COLON THREES ARE NORMAL BRAH", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("OH YEAH???");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("UH HUH.", "WHAT");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("WATCH THIS.");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("meow :3");
+            await new Promise(r => setTimeout(r, 500));
+            logToConsole("I quit.", "WHAT");
+            await new Promise(r => setTimeout(r, 200));
+            logToConsole(".what_0 has left the conversation.", "SYS");
+            return;
+        }
+
         if (!argumentativeFactShown && Math.random() < 0.1) {
             argumentativeFactShown = true;
-            logToConsole("This is the second attempt at making a very long VC... And to think .what_0 didn't want to share the link up until this point!");
+            logToConsole("This is the second (now third) attempt at making a very long VC... And to think .what_0 didn't want to share the link up until the second attempt!");
             await new Promise(r => setTimeout(r, 500));
             logToConsole("HEY! D:<", "WHAT");
             await new Promise(r => setTimeout(r, 500));
@@ -516,10 +562,6 @@
             else if (cmd === "//fact") { handleFacts(); }
             else if (cmd === "//yesorno") { logToConsole(Math.random() > 0.5 ? "Mhm.. Yeah." : "Nah, nuh-uh."); }
             else if (cmd === "//totaltime") {
-                if (!START_TIME) {
-                    logToConsole("System metrics: Awaiting initiation. Clock is at 0.");
-                    return;
-                }
                 const now = Date.now();
                 const diff = now - START_TIME;
                 const d = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -567,21 +609,18 @@
                 tickerClock.innerText = `${h}:${String(targetTime.getMinutes()).padStart(2, "0")}:${String(targetTime.getSeconds()).padStart(2, "0")} ${ampm}`;
             }
 
-            // Only update counters if START_TIME is set
-            if (START_TIME) {
-                const diff = nowMs - START_TIME;
-                const totalHours = Math.floor(diff / 3600000);
-                document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
-                document.getElementById("display-hours").innerText = totalHours % 24;
-                document.getElementById("display-total-hours").innerText = totalHours;
+            const diff = nowMs - START_TIME;
+            const totalHours = Math.floor(diff / 3600000);
+            document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
+            document.getElementById("display-hours").innerText = totalHours % 24;
+            document.getElementById("display-total-hours").innerText = totalHours;
 
-                const totalMinutes = Math.floor(diff / 60000);
-                if (totalMinutes !== lastLoggedMinute) {
-                    if (totalMinutes >= 0) {
-                        logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
-                    }
-                    lastLoggedMinute = totalMinutes;
+            const totalMinutes = Math.floor(diff / 60000);
+            if (totalMinutes !== lastLoggedMinute) {
+                if (totalMinutes >= 0) {
+                    logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
                 }
+                lastLoggedMinute = totalMinutes;
             }
 
             document.getElementById("debug-status").innerText = "RUNNING";
