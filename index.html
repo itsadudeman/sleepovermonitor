@@ -122,6 +122,9 @@
             font-size: 1.8rem;
             border-bottom: 3px solid #330000;
             flex-shrink: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
         }
 
         .ticker {
@@ -281,14 +284,14 @@
         <div class="timer-section">
             <div style="font-size: 1.2rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">Session Duration</div>
             <div class="big-numbers">
-                <span id="display-days">--</span> days<br>
-                <span id="display-hours">--</span> hours
+                <span id="display-days">0</span> days<br>
+                <span id="display-hours">0</span> hours
             </div>
             <div class="total-hours-display">
-                TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
+                TOTAL: <span id="display-total-hours">0</span> HOURS ELAPSED
             </div>
             <div style="font-size: 1rem; margin-top: 20px; opacity: 0.6;">
-                Tracking started: March 18, 2026 @ 10:49AM (GMT+8)
+                Awaiting VC start
             </div>
         </div>
 
@@ -307,7 +310,8 @@
     </div>
 
 <script>
-    const START_TIME = Date.UTC(2026, 2, 18, 2, 49, 0); 
+    // START_TIME is set to null to indicate we are awaiting initiation
+    const START_TIME = null; 
     window.heartbeatCount = 0;
     window.isSystemCrashed = false;
     window.debuggerTerminated = false;
@@ -393,7 +397,6 @@
     const userInput = document.getElementById('user-input');
 
     async function handleFacts() {
-        // Special 1 in 10 chance fact that occurs once per session
         if (!argumentativeFactShown && Math.random() < 0.1) {
             argumentativeFactShown = true;
             logToConsole("This is the second attempt at making a very long VC... And to think .what_0 didn't want to share the link up until this point!");
@@ -418,7 +421,6 @@
             return;
         }
 
-        // Maw. :3 fact occurs once per session at a 5% chance
         if (!mawFactShown && Math.random() < 0.05) { 
             mawFactShown = true;
             logToConsole("Maw. :3"); 
@@ -514,6 +516,10 @@
             else if (cmd === "//fact") { handleFacts(); }
             else if (cmd === "//yesorno") { logToConsole(Math.random() > 0.5 ? "Mhm.. Yeah." : "Nah, nuh-uh."); }
             else if (cmd === "//totaltime") {
+                if (!START_TIME) {
+                    logToConsole("System metrics: Awaiting initiation. Clock is at 0.");
+                    return;
+                }
                 const now = Date.now();
                 const diff = now - START_TIME;
                 const d = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -561,18 +567,21 @@
                 tickerClock.innerText = `${h}:${String(targetTime.getMinutes()).padStart(2, "0")}:${String(targetTime.getSeconds()).padStart(2, "0")} ${ampm}`;
             }
 
-            const diff = nowMs - START_TIME;
-            const totalHours = Math.floor(diff / 3600000);
-            document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
-            document.getElementById("display-hours").innerText = totalHours % 24;
-            document.getElementById("display-total-hours").innerText = totalHours;
+            // Only update counters if START_TIME is set
+            if (START_TIME) {
+                const diff = nowMs - START_TIME;
+                const totalHours = Math.floor(diff / 3600000);
+                document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
+                document.getElementById("display-hours").innerText = totalHours % 24;
+                document.getElementById("display-total-hours").innerText = totalHours;
 
-            const totalMinutes = Math.floor(diff / 60000);
-            if (totalMinutes !== lastLoggedMinute) {
-                if (totalMinutes >= 0) {
-                    logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
+                const totalMinutes = Math.floor(diff / 60000);
+                if (totalMinutes !== lastLoggedMinute) {
+                    if (totalMinutes >= 0) {
+                        logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
+                    }
+                    lastLoggedMinute = totalMinutes;
                 }
-                lastLoggedMinute = totalMinutes;
             }
 
             document.getElementById("debug-status").innerText = "RUNNING";
@@ -603,7 +612,10 @@
         }
     }, 200);
 
-    window.onload = () => { updateKeybindDisplay(); mainUpdateLoop(); };
+    window.onload = () => { 
+        updateKeybindDisplay(); 
+        mainUpdateLoop(); 
+    };
 </script>
 </body>
 </html>
