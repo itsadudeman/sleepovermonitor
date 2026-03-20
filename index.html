@@ -296,7 +296,7 @@
                 TOTAL: <span id="display-total-hours">--</span> HOURS ELAPSED
             </div>
             <div style="font-size: 1rem; margin-top: 20px; opacity: 0.6;">
-                Tracking started: March 19, 2026 @ 11:19AM (GMT+8)
+                Tracking started: March 20, 2026 @ 11:19AM (GMT+8)
             </div>
         </div>
 
@@ -315,8 +315,8 @@
     </div>
 
 <script>
-    // Updated Start Time: March 19, 2026 @ 11:19 AM GMT+8 (3:19 AM UTC)
-    const START_TIME = Date.UTC(2026, 2, 19, 3, 19, 0); 
+    // Updated Start Time: March 20, 2026 @ 11:19 AM GMT+8 (3:19 AM UTC)
+    const START_TIME = Date.UTC(2026, 2, 20, 3, 19, 0); 
     window.heartbeatCount = 0;
     window.isSystemCrashed = false;
     window.debuggerTerminated = false;
@@ -334,7 +334,7 @@
     let skyboxFactShown = false;
     let argumentativeFactShown = false;
     let mawFactShown = false;
-    let hiringDramaFactShown = false; // Tracking the new fact
+    let hiringDramaFactShown = false;
 
     const MAX_LOGS = 100;
     const birdSfx = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_7315cc9697.mp3'); 
@@ -404,7 +404,6 @@
     const userInput = document.getElementById('user-input');
 
     async function handleFacts() {
-        // Chance for the Hiring Drama interaction
         if (!hiringDramaFactShown && Math.random() < 0.1) {
             hiringDramaFactShown = true;
             logToConsole("This job sucks.");
@@ -484,9 +483,7 @@
         ];
 
         const skyboxFact = "skyboxhihi!! how has it been? c:";
-        if (!skyboxFactShown) {
-            factPool.push(skyboxFact);
-        }
+        if (!skyboxFactShown) { factPool.push(skyboxFact); }
 
         let selected = factPool[Math.floor(Math.random() * factPool.length)];
 
@@ -500,16 +497,13 @@
                 logToConsole("Failed to terminate program.", "ERR");
             }
             logToConsole("Dang it.. :(");
-        } else { 
-            logToConsole(selected); 
-        }
+        } else { logToConsole(selected); }
     }
 
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !window.isSystemCrashed) {
             const rawText = userInput.value.trim();
             if (rawText === "") return;
-            
             const cmdLower = rawText.toLowerCase();
 
             if (lorepieceAwaitingConfirm) {
@@ -523,9 +517,7 @@
                     lorepieceAwaitingConfirm = false;
                     lorepieceLocked = true;
                     logToConsole("Thank you for not proceeding. Response code night32.");
-                } else {
-                    logToConsole("Invalid response. Please designate your answer with Y or N.", "ERR");
-                }
+                } else { logToConsole("Invalid response. Please designate your answer with Y or N.", "ERR"); }
                 userInput.value = "";
                 return;
             }
@@ -536,7 +528,6 @@
                 if (parts.length === 2) {
                     const username = parts[0];
                     const password = parts[1];
-                    
                     if (username === "skyboxhihi" && password === "night32") {
                         logToConsole("Please forward this message to .what_0. Thank you for your time.", "NIGHT");
                         lorepieceAwaitingCredentials = false;
@@ -549,16 +540,13 @@
                         lorepieceAwaitingCredentials = false;
                         lorepieceLocked = true;
                     }
-                } else {
-                    logToConsole("Invalid credential format. Use: username, password", "ERR");
-                }
+                } else { logToConsole("Invalid credential format. Use: username, password", "ERR"); }
                 userInput.value = "";
                 return;
             }
 
             logToConsole(rawText, "USER");
             const cmd = cmdLower;
-
             if (cmd === "//clear") { document.getElementById("console-content").innerHTML = ""; } 
             else if (cmd === "//bird") { birdSfx.play(); logToConsole("Audio pulse emitted (Chirp)."); } 
             else if (cmd === "//fact") { handleFacts(); }
@@ -574,12 +562,8 @@
             else if (cmd === "//stopticker") { document.getElementById('main-ticker').classList.add('paused'); logToConsole("Ticker state: SUSPENDED."); }
             else if (cmd === "//startticker") { document.getElementById('main-ticker').classList.remove('paused'); logToConsole("Ticker state: ACTIVE."); }
             else if (cmd === "//lorepiece") {
-                if (lorepieceLocked) {
-                    logToConsole("410 Gone", "ERR");
-                } else {
-                    logToConsole("You are exiting Birds Console and The Sleepover boundaries. Are you sure? (Designate your answer with Y or N.)");
-                    lorepieceAwaitingConfirm = true;
-                }
+                if (lorepieceLocked) { logToConsole("410 Gone", "ERR"); } 
+                else { logToConsole("You are exiting Birds Console and The Sleepover boundaries. Are you sure? (Designate your answer with Y or N.)"); lorepieceAwaitingConfirm = true; }
             }
             else if (cmd.startsWith("//modifytime")) {
                 const parts = rawText.split(' ');
@@ -600,7 +584,6 @@
         window.heartbeatCount++;
         const now = new Date();
         const nowMs = now.getTime();
-        
         try {
             const tickerClock = document.getElementById("ticker-clock");
             if (tickerClock) {
@@ -610,26 +593,20 @@
                 h = h % 12 || 12;
                 tickerClock.innerText = `${h}:${String(targetTime.getMinutes()).padStart(2, "0")}:${String(targetTime.getSeconds()).padStart(2, "0")} ${ampm}`;
             }
-
             const diff = nowMs - START_TIME;
             const totalHours = Math.floor(diff / 3600000);
             document.getElementById("display-days").innerText = Math.floor(totalHours / 24);
             document.getElementById("display-hours").innerText = totalHours % 24;
             document.getElementById("display-total-hours").innerText = totalHours;
-
             const totalMinutes = Math.floor(diff / 60000);
             if (totalMinutes !== lastLoggedMinute) {
-                if (totalMinutes >= 0) {
-                    logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`);
-                }
+                if (totalMinutes >= 0) { logToConsole(`System pulse detected. Total time: ${Math.floor(totalHours/24)}d ${totalHours%24}h ${totalMinutes % 60}m.`); }
                 lastLoggedMinute = totalMinutes;
             }
-
             document.getElementById("debug-status").innerText = "RUNNING";
             document.getElementById("debug-ms").innerText = `${now.toLocaleTimeString()}.${String(now.getMilliseconds()).padStart(3, "0")}`;
             document.getElementById("debug-errors").innerText = window.debuggerTerminated ? "DELETED" : "NONE";
             document.getElementById("debug-errors").style.color = window.debuggerTerminated ? "#ff00ff" : "#00ff00";
-
         } catch (err) {
             document.getElementById("debug-status").innerText = "MODULE ERROR";
             document.getElementById("debug-errors").innerText = err.message;
@@ -653,10 +630,7 @@
         }
     }, 200);
 
-    window.onload = () => { 
-        updateKeybindDisplay(); 
-        mainUpdateLoop(); 
-    };
+    window.onload = () => { updateKeybindDisplay(); mainUpdateLoop(); };
 </script>
 </body>
 </html>
